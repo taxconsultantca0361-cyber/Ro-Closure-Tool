@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>RO Closure Tool – Login</title>
+<link rel="stylesheet" href="/css/styles.css">
+<style>
+body{display:flex;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#1e3a5f 0%,#2a4f80 100%);}
+.login-card{background:#fff;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.3);padding:2.5rem 2rem;width:100%;max-width:400px;}
+.login-logo{text-align:center;margin-bottom:2rem;}
+.login-logo h1{font-size:1.6rem;color:#1e3a5f;font-weight:700;}
+.login-logo p{color:#6b7280;font-size:.88rem;margin-top:.25rem;}
+.form-group{margin-bottom:1.2rem;}
+.form-group label{display:block;font-size:.85rem;font-weight:600;color:#374151;margin-bottom:.4rem;}
+.form-group input{width:100%;padding:.65rem .85rem;border:1.5px solid #d1d5db;border-radius:8px;font-size:.95rem;transition:border-color .2s;outline:none;}
+.form-group input:focus{border-color:#2563eb;box-shadow:0 0 0 3px rgba(37,99,235,.12);}
+.btn-login{width:100%;padding:.75rem;background:#1e3a5f;color:#fff;border:none;border-radius:8px;font-size:1rem;font-weight:600;transition:background .2s;margin-top:.5rem;cursor:pointer;}
+.btn-login:hover{background:#2a4f80;}
+.error-msg{background:#fee2e2;color:#dc2626;padding:.6rem .85rem;border-radius:6px;font-size:.85rem;margin-bottom:1rem;display:none;}
+</style>
+</head>
+<body>
+<div class="login-card">
+  <div class="login-logo">
+    <h1>&#128197; RO Closure Tool</h1>
+    <p>Monthly Closure Management System</p>
+  </div>
+  <div class="error-msg" id="errMsg"></div>
+  <form id="loginForm">
+    <div class="form-group">
+      <label>Username</label>
+      <input type="text" id="username" placeholder="Enter username" autocomplete="username" required>
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <input type="password" id="password" placeholder="Enter password" autocomplete="current-password" required>
+    </div>
+    <button type="submit" class="btn-login" id="loginBtn">Login</button>
+  </form>
+</div>
+<script src="/js/login.js"></script>
+</body>
+</html>

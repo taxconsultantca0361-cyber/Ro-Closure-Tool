@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>My ROs – RO Closure Tool</title>
+<link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="container topbar-inner">
+    <div class="topbar-brand">&#128197; RO Closure Tool</div>
+    <div class="topbar-right">
+      <span id="accName" class="topbar-user"></span>
+      <button class="btn btn-sm btn-outline-light" onclick="logout()">Logout</button>
+    </div>
+  </div>
+</header>
+<div class="container page-content">
+  <div class="card">
+    <div class="card-header flex-between">
+      <div>
+        <h2>My Assigned ROs</h2>
+        <p class="text-muted" id="progressText" style="margin-top:.25rem"></p>
+      </div>
+      <div class="flex gap-sm align-center">
+        <label class="text-muted" style="font-size:.85rem">Period:</label>
+        <select id="accMonth" class="input-sm" onchange="loadROs()"></select>
+        <select id="accYear" class="input-sm" onchange="loadROs()"></select>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="ro-grid" id="roGrid"><div class="loading-spinner"></div></div>
+    </div>
+  </div>
+</div>
+<div id="toast" class="toast"></div>
+<script src="/js/accountant.js"></script>
+</body>
+</html>

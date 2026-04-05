@@ -1,0 +1,17 @@
+{
+  "name": "RO Closure Tool",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:20",
+  "postCreateCommand": "npm install",
+  "postStartCommand": "node server.js &",
+  "forwardPorts": [3000],
+  "portsAttributes": {
+    "3000": {
+      "label": "RO Closure Tool",
+      "onAutoForward": "notify",
+      "visibility": "public"
+    }
+  },
+  "remoteEnv": {
+    "DATA_DIR": "/workspaces/ro-closure-tool/data"
+  }
+}
