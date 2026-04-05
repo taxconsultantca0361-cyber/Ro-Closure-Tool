@@ -820,7 +820,7 @@ hr.divider { border: none; border-top: 1px solid var(--gray-200); margin: 1rem 0
 
 /* ── Modal ───────────────────────────────────────────────────── */
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;padding:2rem;overflow-y:auto;align-items:flex-start;justify-content:center;}
-.modal-overlay.active{display:flex;}
+.modal-overlay.active{display:flex;opacity:1;visibility:visible;}
 .modal-box{background:#fff;border-radius:var(--radius-lg);box-shadow:var(--shadow-lg);width:100%;max-width:700px;max-height:90vh;overflow-y:auto;margin:auto;}
 .modal-header{display:flex;align-items:center;justify-content:space-between;padding:1rem 1.25rem;border-bottom:1px solid var(--gray-100);position:sticky;top:0;background:#fff;z-index:1;}
 .modal-header h3{font-size:1rem;font-weight:700;margin:0;}
