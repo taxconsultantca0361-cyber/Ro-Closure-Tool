@@ -26,6 +26,7 @@ async function init() {
       if(btn.dataset.tab==='reports') loadAccForPerf();
     });
   });
+  initDeadlineMgmt();
   loadDashboard();
 }
 
@@ -56,7 +57,7 @@ async function loadDashboard() {
     } else {
       dlHtml+='<span style="color:#9ca3af">&#128197; No deadline set for '+MN[m-1]+' '+y+'</span>';
     }
-    dlHtml+='<button class="btn btn-xs btn-outline" onclick="setDeadlineModal('+m+','+y+')" style="margin-left:auto">'+(dl?'&#9998; Change':'+ Set')+' Deadline</button>';
+    dlHtml+='<a href="#dlMgmtSection" class="btn btn-xs btn-outline" style="margin-left:auto">'+(dl?'&#9998; Change':'+ Set')+' Deadline</a>';
     dlHtml+='<button class="btn btn-xs btn-outline" onclick="showPerformer('+m+','+y+')" style="background:#fef9c3;border-color:#fbbf24">&#127942; Performer of Month</button>';
     dlHtml+='</div>';
     db2.innerHTML=dlHtml;
@@ -80,6 +81,67 @@ async function loadDashboard() {
     html+='</tbody></table>';
     dt.innerHTML=html;
   } catch(e){dt.innerHTML='<p style="color:red">'+e.message+'</p>';}
+}
+
+// ── Deadline Management Section ────────────────────────────────────────
+function initDeadlineMgmt() {
+  const now = new Date();
+  const mSel = document.getElementById('dlMgmtMonth');
+  const ySel = document.getElementById('dlMgmtYear');
+  if(!mSel || !ySel) return;
+  MN.forEach((m,i)=>{const o=document.createElement('option');o.value=i+1;o.textContent=m;if(i+1===now.getMonth()+1)o.selected=true;mSel.appendChild(o);});
+  for(let y=now.getFullYear()+1;y>=now.getFullYear()-2;y--){const o=document.createElement('option');o.value=y;o.textContent=y;if(y===now.getFullYear())o.selected=true;ySel.appendChild(o);}
+  loadDeadlineMgmt();
+}
+
+async function loadDeadlineMgmt() {
+  const m = document.getElementById('dlMgmtMonth')?.value;
+  const y = document.getElementById('dlMgmtYear')?.value;
+  const statusEl = document.getElementById('dlMgmtStatus');
+  const dateEl = document.getElementById('dlMgmtDate');
+  if(!m||!y||!statusEl||!dateEl) return;
+  try {
+    const d = await api('/api/admin/settings/deadline/'+m+'/'+y);
+    if(d.deadline) {
+      dateEl.value = d.deadline;
+      const dlDate = new Date(d.deadline+'T23:59:59');
+      const now = new Date();
+      const diff = Math.ceil((dlDate-now)/(1000*60*60*24));
+      const isPast = diff < 0;
+      statusEl.innerHTML = '<div style="padding:.4rem .75rem;border-radius:6px;font-size:.85rem;display:inline-block;background:'+(isPast?'#fee2e2':'#dcfce7')+';color:'+(isPast?'#dc2626':'#15803d')+'">Current deadline: <strong>'+d.deadline+'</strong> '+(isPast?'(Closed)':'('+diff+' days remaining)')+'</div>';
+    } else {
+      dateEl.value = '';
+      statusEl.innerHTML = '<div style="padding:.4rem .75rem;border-radius:6px;font-size:.85rem;display:inline-block;background:#f3f4f6;color:#6b7280">No deadline set for '+MN[m-1]+' '+y+'</div>';
+      // Pre-fill default: 7th of next month
+      const nm = parseInt(m)===12?1:parseInt(m)+1;
+      const ny = parseInt(m)===12?parseInt(y)+1:parseInt(y);
+      dateEl.value = ny+'-'+String(nm).padStart(2,'0')+'-07';
+    }
+  } catch(e) { statusEl.innerHTML=''; }
+}
+
+async function saveDeadlineMgmt() {
+  const m = document.getElementById('dlMgmtMonth').value;
+  const y = document.getElementById('dlMgmtYear').value;
+  const d = document.getElementById('dlMgmtDate').value;
+  if(!d) return toast('Select a deadline date','error');
+  try {
+    await post('/api/admin/settings/deadline',{month:parseInt(m),year:parseInt(y),date:d});
+    toast('Deadline saved for '+MN[m-1]+' '+y+'!','success');
+    loadDeadlineMgmt();
+    loadDashboard();
+  } catch(e) { toast(e.message,'error'); }
+}
+
+async function clearDeadlineMgmt() {
+  const m = document.getElementById('dlMgmtMonth').value;
+  const y = document.getElementById('dlMgmtYear').value;
+  try {
+    await post('/api/admin/settings/deadline',{month:parseInt(m),year:parseInt(y),date:''});
+    toast('Deadline cleared for '+MN[m-1]+' '+y,'success');
+    loadDeadlineMgmt();
+    loadDashboard();
+  } catch(e) { toast(e.message,'error'); }
 }
 
 function setDeadlineModal(m,y){

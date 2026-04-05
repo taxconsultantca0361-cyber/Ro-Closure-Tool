@@ -42,6 +42,23 @@
         <div id="dashboardTable" style="overflow-x:auto;margin-top:1rem"></div>
       </div>
     </div>
+    <div class="card" style="margin-top:1.5rem" id="dlMgmtSection">
+      <div class="card-header flex-between">
+        <h2>&#128197; Submission Deadline Management</h2>
+      </div>
+      <div class="card-body">
+        <p class="text-muted" style="margin-bottom:1rem">Set the last date by which accountants must submit their monthly closure reports. Typically 3rd–7th of the following month.</p>
+        <div style="display:flex;gap:.75rem;align-items:flex-end;flex-wrap:wrap;margin-bottom:1.25rem">
+          <div><label style="display:block;font-size:.82rem;font-weight:600;margin-bottom:.3rem">Month</label><select id="dlMgmtMonth" class="input-sm" onchange="loadDeadlineMgmt()"></select></div>
+          <div><label style="display:block;font-size:.82rem;font-weight:600;margin-bottom:.3rem">Year</label><select id="dlMgmtYear" class="input-sm" onchange="loadDeadlineMgmt()"></select></div>
+          <div style="flex:1;min-width:160px"><label style="display:block;font-size:.82rem;font-weight:600;margin-bottom:.3rem">Deadline Date</label><input type="date" id="dlMgmtDate" class="form-control" style="height:34px"></div>
+          <button class="btn btn-primary btn-sm" onclick="saveDeadlineMgmt()">Save Deadline</button>
+          <button class="btn btn-sm btn-outline" onclick="clearDeadlineMgmt()">Clear</button>
+        </div>
+        <div id="dlMgmtStatus"></div>
+        <div id="dlMgmtAllList" style="margin-top:1rem"></div>
+      </div>
+    </div>
   </div>
 
   <div class="tab-content" id="tab-accountants">

@@ -368,12 +368,12 @@ app.post('/api/accountant/closure/:ro_id/:month/:year/submit', auth, function(re
 
   if (missing.length > 0) return res.status(400).json({ error: 'Unanswered questions', missing: missing });
 
-  db.closures.update({ id: closure.id }, { status: 'submitted', submitted_at: db.now() });
+  db.closures.update({ id: closure.id }, { status: 'submitted', submitted_at: db.now(), admin_action: null, admin_note: null, admin_at: null });
   res.json({ ok: true });
 });
 
 // ─── Admin: Deadline Settings ────────────────────────────────────────────────
-app.get('/api/admin/settings/deadline/:month/:year', admin, function(req, res) {
+app.get('/api/admin/settings/deadline/:month/:year', auth, function(req, res) {
   var month = parseInt(req.params.month), year = parseInt(req.params.year);
   var s = db.settings.one({ key: 'deadline_' + year + '_' + month });
   res.json({ deadline: s ? s.value : null });
