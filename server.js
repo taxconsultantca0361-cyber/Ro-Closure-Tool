@@ -229,6 +229,8 @@ app.get('/api/admin/reports/:month/:year', admin, function(req, res) {
     return {
       id: cl.id, ro_id: cl.ro_id, ro_name: ro.ro_name, state: ro.state,
       accountant_name: accMap[cl.accountant_id] || '', submitted_at: cl.submitted_at,
+      admin_action: cl.admin_action || null, admin_note: cl.admin_note || null,
+      admin_at: cl.admin_at || null, resubmit_count: cl.resubmit_count || 0,
       yes_count: answers.filter(function(a) { return a.answer === 'YES'; }).length,
       no_count: answers.filter(function(a) { return a.answer === 'NO'; }).length,
       na_count: answers.filter(function(a) { return a.answer === 'NA'; }).length,
@@ -294,6 +296,9 @@ app.get('/api/accountant/ros', auth, function(req, res) {
       closure_id: cl ? cl.id : null,
       status: cl ? cl.status : null,
       submitted_at: cl ? cl.submitted_at : null,
+      admin_action: cl ? (cl.admin_action || null) : null,
+      admin_note: cl ? (cl.admin_note || null) : null,
+      resubmit_count: cl ? (cl.resubmit_count || 0) : 0,
       item_count: cnt
     });
   });
@@ -365,6 +370,105 @@ app.post('/api/accountant/closure/:ro_id/:month/:year/submit', auth, function(re
 
   db.closures.update({ id: closure.id }, { status: 'submitted', submitted_at: db.now() });
   res.json({ ok: true });
+});
+
+// ─── Admin: Deadline Settings ────────────────────────────────────────────────
+app.get('/api/admin/settings/deadline/:month/:year', admin, function(req, res) {
+  var month = parseInt(req.params.month), year = parseInt(req.params.year);
+  var s = db.settings.one({ key: 'deadline_' + year + '_' + month });
+  res.json({ deadline: s ? s.value : null });
+});
+
+app.post('/api/admin/settings/deadline', admin, function(req, res) {
+  var month = parseInt(req.body.month), year = parseInt(req.body.year), date = req.body.date;
+  if (!month || !year || !date) return res.status(400).json({ error: 'month, year, date required' });
+  var key = 'deadline_' + year + '_' + month;
+  var existing = db.settings.one({ key: key });
+  if (existing) db.settings.update({ key: key }, { value: date });
+  else db.settings.insert({ key: key, value: date });
+  res.json({ ok: true });
+});
+
+// ─── Admin: Closure Actions ──────────────────────────────────────────────────
+app.post('/api/admin/closure/:closure_id/reopen', admin, function(req, res) {
+  var cid = parseInt(req.params.closure_id);
+  var cl = db.closures.one({ id: cid });
+  if (!cl) return res.status(404).json({ error: 'Not found' });
+  db.closures.update({ id: cid }, { status: 'draft', submitted_at: null, admin_action: null, admin_note: null, resubmit_count: (cl.resubmit_count || 0) + 1 });
+  res.json({ ok: true });
+});
+
+app.post('/api/admin/closure/:closure_id/approve', admin, function(req, res) {
+  var cid = parseInt(req.params.closure_id);
+  var cl = db.closures.one({ id: cid });
+  if (!cl) return res.status(404).json({ error: 'Not found' });
+  if (cl.status !== 'submitted') return res.status(400).json({ error: 'Not in submitted state' });
+  db.closures.update({ id: cid }, { admin_action: 'approved', admin_note: req.body.note || null, admin_at: db.now() });
+  res.json({ ok: true });
+});
+
+app.post('/api/admin/closure/:closure_id/reject', admin, function(req, res) {
+  var cid = parseInt(req.params.closure_id);
+  var cl = db.closures.one({ id: cid });
+  if (!cl) return res.status(404).json({ error: 'Not found' });
+  if (cl.status !== 'submitted') return res.status(400).json({ error: 'Not in submitted state' });
+  db.closures.update({ id: cid }, { status: 'draft', submitted_at: null, admin_action: 'rejected', admin_note: req.body.note || null, admin_at: db.now() });
+  res.json({ ok: true });
+});
+
+// ─── Accountant: Cancel Submission ──────────────────────────────────────────
+app.post('/api/accountant/closure/:ro_id/:month/:year/cancel', auth, function(req, res) {
+  var roId = parseInt(req.params.ro_id), month = parseInt(req.params.month), year = parseInt(req.params.year);
+  var accId = req.session.user.id;
+  var ro = db.ros.one(function(r) { return r.id === roId && r.accountant_id === accId && r.is_active === 1; });
+  if (!ro) return res.status(403).json({ error: 'Access denied' });
+  var closure = db.closures.one(function(c) { return c.ro_id === roId && c.month === month && c.year === year; });
+  if (!closure) return res.status(404).json({ error: 'Closure not found' });
+  if (closure.status !== 'submitted') return res.status(400).json({ error: 'Not submitted' });
+  if (closure.admin_action === 'approved') return res.status(400).json({ error: 'Already approved by admin, cannot cancel' });
+  db.closures.update({ id: closure.id }, { status: 'draft', submitted_at: null, admin_action: null, admin_note: null, resubmit_count: (closure.resubmit_count || 0) + 1 });
+  res.json({ ok: true });
+});
+
+// ─── Admin: Performer of Month ────────────────────────────────────────────────
+app.get('/api/admin/performer/:month/:year', admin, function(req, res) {
+  var month = parseInt(req.params.month), year = parseInt(req.params.year);
+  var setting = db.settings.one({ key: 'deadline_' + year + '_' + month });
+  var deadline = setting ? new Date(setting.value + 'T23:59:59') : null;
+  var accs = db.accountants.all(function(a) { return a.role === 'accountant' && a.is_active === 1; });
+  var allROs = db.ros.all({ is_active: 1 });
+  var closures = db.closures.all(function(c) { return c.month === month && c.year === year; });
+  var closureMap = {};
+  closures.forEach(function(c) { closureMap[c.ro_id] = c; });
+
+  var rankings = accs.map(function(acc) {
+    var myROs = allROs.filter(function(r) { return r.accountant_id === acc.id; });
+    var total = myROs.length;
+    if (!total) return null;
+    var submitted = 0, onTime = 0, totalDaysEarly = 0;
+    myROs.forEach(function(ro) {
+      var cl = closureMap[ro.id];
+      if (cl && (cl.status === 'submitted' || cl.admin_action === 'approved')) {
+        submitted++;
+        if (deadline && cl.submitted_at) {
+          var subDate = new Date(cl.submitted_at);
+          if (subDate <= deadline) {
+            onTime++;
+            totalDaysEarly += (deadline - subDate) / (1000 * 60 * 60 * 24);
+          }
+        } else { onTime++; totalDaysEarly += 3; }
+      }
+    });
+    var completionRate = Math.round(submitted / total * 100);
+    var avgDaysEarly = onTime ? Math.round(totalDaysEarly / onTime * 10) / 10 : 0;
+    return { id: acc.id, name: acc.name, total_ros: total, submitted: submitted, on_time: onTime, completion_rate: completionRate, avg_days_early: avgDaysEarly };
+  }).filter(Boolean);
+
+  rankings.sort(function(a, b) {
+    if (b.completion_rate !== a.completion_rate) return b.completion_rate - a.completion_rate;
+    return b.avg_days_early - a.avg_days_early;
+  });
+  res.json({ month: month, year: year, deadline: setting ? setting.value : null, rankings: rankings });
 });
 
 // ─── Start ────────────────────────────────────────────────────────────────────

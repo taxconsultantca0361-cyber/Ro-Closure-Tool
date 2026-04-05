@@ -14,11 +14,13 @@ function load() {
   if (_state) return _state;
   try {
     _state = JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
+    // Migrations: add new tables if missing
+    if (!_state.settings) { _state.settings = []; save(); }
   } catch(e) {
     _state = {
       accountants: [], ros: [], ro_items: [],
       general_queries: [], closures: [], closure_answers: [],
-      seq: {}
+      settings: [], seq: {}
     };
     save();
   }
@@ -161,6 +163,21 @@ var db = {
       s.closures.forEach(function(r) {
         if (match(r, filter)) Object.keys(changes).forEach(function(k) { r[k] = changes[k]; });
       });
+      save();
+    }
+  },
+
+  // ── settings ─────────────────────────────────────────────────────────────────
+  settings: {
+    all: function(filter) { return load().settings.filter(function(r) { return match(r, filter); }); },
+    one: function(filter) { var s = load().settings.filter(function(r) { return match(r, filter); }); return s[0] || null; },
+    insert: function(data) {
+      var s = load(); data.id = nextId('settings'); data.created_at = nowStr();
+      s.settings.push(data); save(); return data;
+    },
+    update: function(filter, changes) {
+      var s = load();
+      s.settings.forEach(function(r) { if (match(r, filter)) Object.keys(changes).forEach(function(k) { r[k] = changes[k]; }); });
       save();
     }
   },
